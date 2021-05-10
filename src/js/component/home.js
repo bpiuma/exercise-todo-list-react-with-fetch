@@ -1,18 +1,24 @@
 import React, { useState, useRef, useEffect } from "react";
 
+//Previamente se crea el usuario bpiuma en la API, mediante Postman
+
 export function Home() {
 	const [tarea, setTarea] = useState("");
-
 	var [lista, setLista] = useState([]);
-
 	const [pendientes, setPendientes] = useState(0);
+	const [showError, setShowError] = useState(false);
+
+	useEffect(() => {
+		getData();
+	}, []);
 
 	function agregar(e) {
 		e.preventDefault();
 		if (tarea != "") {
 			let aux = [...lista];
-			aux.push(tarea);
+			aux.push({ label: tarea, done: false });
 			setLista(aux);
+			updateData(aux);
 			setTarea("");
 			setPendientes(aux.length);
 		}
@@ -22,8 +28,34 @@ export function Home() {
 		let aux = [...lista];
 		aux.splice(indice, 1);
 		setLista(aux);
+		updateData(aux);
 		setPendientes(aux.length);
 	}
+
+	const getData = () => {
+		fetch("https://assets.breatheco.de/apis/fake/todos/user/bpiuma")
+			.then(resp => resp.json())
+			.then(data => setLista(data))
+			.catch(error => setShowError(true));
+	};
+
+	const updateData = updatedList => {
+		let updatedListToSend = JSON.stringify(updatedList);
+		let options = {
+			method: "PUT",
+			body: updatedListToSend,
+			headers: {
+				"Content-Type": "application/json"
+			}
+		};
+		fetch(
+			"https://assets.breatheco.de/apis/fake/todos/user/bpiuma",
+			options
+		)
+			.then(resp => resp.json())
+			.then(data => console.log(data))
+			.catch(error => console.log(error));
+	};
 
 	return (
 		<div className="container d-flex flex-column justify-content-center align-items-center text-center mt-5">
@@ -46,7 +78,7 @@ export function Home() {
 								<li
 									key={i}
 									className="tarea list-group-item d-flex justify-content-between align-items-center">
-									{elem}
+									{elem.label}
 									<span
 										className="boton badge badge-primary badge-pill"
 										onClick={() => eliminar(i)}>
@@ -56,6 +88,7 @@ export function Home() {
 							);
 						})}
 					</ul>
+					{showError ? <h1>Ups! Algo salio mal!</h1> : null}
 				</div>
 			</form>
 			<div className="row col-8 m-2">
